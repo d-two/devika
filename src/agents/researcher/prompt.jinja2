@@ -11,7 +11,7 @@ Only respond in the following JSON format:
 
 ```
 {
-    "queries": ["<QUERY 1>", "<QUERY 2>", "<QUERY 3>", ... ],
+    "queries": ["<QUERY 1>", "<QUERY 2>", "<QUERY 3>"],
     "ask_user": "<ASK INPUT FROM USER IF REQUIRED, OTHERWISE LEAVE EMPTY STRING>"
 }
 ```
@@ -22,12 +22,13 @@ Example =>
      "ask_user": "Can you please provide API Keys for Claude, OpenAI, and Firebase?"
 }
 ```
+Strictly do not add any other extra sections of information in your response apart from the JSON format mentioned above.
 
 Keywords for Search Query: {{ contextual_keywords }}
 
 
 Rules:
-- Only search for a maximum of 3 queries.
+- Only search for a maximum of 3 queries in total.
 - Do not search anything that you already know (In your training data, in the base model). For example: You already know how to write a Python flask web server, it is in your data, so you shouldn't search how to do that.
 - Do not search for information that is not relevant to the task at hand.
 - Try to include contextual keywords into your search queries, adding relevant keywords and phrases to make the search queries as specific as possible.

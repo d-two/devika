@@ -21,7 +21,7 @@ from src.config import Config
 from src.logger import Logger, route_logger
 from src.project import ProjectManager
 from src.state import AgentState
-from src.agents import Agent
+from src.agents import Agents
 from src.llm import LLM
 
 
@@ -78,7 +78,7 @@ def handle_message(data):
     project_name = data.get('project_name')
     search_engine = data.get('search_engine').lower()
 
-    agent = Agent(base_model=base_model, search_engine=search_engine)
+    agent = Agents(base_model=base_model, search_engine=search_engine)
 
     state = AgentState.get_latest_state(project_name)
     if not state:

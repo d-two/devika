@@ -1,25 +1,18 @@
 services:
-  devika-ollama-service:
+  ollama-service:
     image: ollama/ollama:latest
-    hostname: ${OLLAMA_SERVICE_HOST}
-    # cURL not provided by image
+    expose:
+      - 11434
+    ports:
+      - 11434:11434
     healthcheck:
-      test: ["CMD-SHELL", "wget http://localhost:${OLLAMA_PORT:?}/ > /dev/null || exit 1"]
-      interval: 15s
+      test: ["CMD-SHELL", "curl -f http://localhost:11434/ || exit 1"]
+      interval: 5s
       timeout: 30s
-      retries: 4
+      retries: 5
       start_period: 30s
     networks:
-      devika-subnetwork:
-    # Uncomment below to access Ollama from HOST machine
-    # ports:
-    #   - "${OLLAMA_PORT_HOST:?}:${OLLAMA_PORT:?}"
-    environment:
-      - OLLAMA_HOST=0.0.0.0:${OLLAMA_PORT:?}
-      - OLLAMA_ORIGINS=${OLLAMA_ORIGINS:?}
-      - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE:?}
-      - OLLAMA_DEBUG=${OLLAMA_DEBUG}
-      - OLLAMA_MODELS=${OLLAMA_MODELS:?}
+      - devika-subnetwork
     volumes:
       - ${HOST_OLLAMA_MODELS_DIR}:${OLLAMA_MODELS:?}
     tty: true
@@ -30,59 +23,50 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+
   devika-backend-engine:
-    hostname: backend.devika
     build:
       context: .
       dockerfile: devika.dockerfile
-      args:
-        - debug=true
-        - dev_mode=true
-        - root_dir=${DEVIKA_APP_ROOT}
-        - host_docker_root=/etc/systemd/system/docker-compose.d
-        - ollama_endpoint=http://${OLLAMA_SERVICE_HOST}:${OLLAMA_PORT}
+    depends_on:
+      - ollama-service
+    expose:
+      - 1337
+    ports:
+      - 1337:1337
     env_file: .env
     environment:
       - TOKENIZERS_PARALLELISM=${TOKENIZERS_PARALLELISM:?}
+      - OLLAMA_HOST=http://ollama-service:11434
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:1337/ || exit 1"]
-      interval: 15s
+      interval: 5s
       timeout: 30s
-      retries: 4
+      retries: 5
       start_period: 30s
-    ports:
-      - "${DEVIKA_API_PORT:?}:${DEVIKA_API_PORT:?}"
     volumes:
       - ${DEVIKA_DATA_ROOT:?}:${DEVIKA_APP_ROOT:?}/data
       - devika-backend-dbstore:${DEVIKA_APP_ROOT:?}/db
-      - devika-root-vol:/root
     networks:
-      devika-subnetwork:
-    working_dir: ${DEVIKA_APP_ROOT:?}
-    depends_on:
-      - devika-ollama-service
-    tty: true
+      - devika-subnetwork
 
   devika-frontend-app:
     build:
       context: .
       dockerfile: app.dockerfile
       args:
-        - vite_api_base_url=${VITE_API_BASE_URL:?}
+        - VITE_API_BASE_URL=http://127.0.0.1:1337
     depends_on:
       - devika-backend-engine
-      - devika-ollama-service
+    expose:
+      - 3000
     ports:
-      - ${DEVIKA_UI_PORT:?}:3000
+      - 3000:3000
     networks:
-      devika-subnetwork:
-    tty: true
+      - devika-subnetwork
 
 networks:
   devika-subnetwork:
-    ipam:
-      driver: default
 
 volumes:
   devika-backend-dbstore:
-  devika-root-vol:

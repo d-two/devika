@@ -33,11 +33,13 @@ class Coder:
 
     def validate_response(self, response: str) -> Union[List[Dict[str, str]], bool]:
         response = response.strip()
-
-        self.logger.debug(f"Response from the model: {response}")
+        if response.startswith("```python"):
+            response = response[len("```python"):]
 
         if "~~~" not in response:
-            return False
+            response = f"~~~\n{response}\n~~~"
+
+        self.logger.debug(f"Response from the model: {response}")
 
         response = response.split("~~~", 1)[1]
         response = response[:response.rfind("~~~")]
@@ -49,7 +51,7 @@ class Coder:
         code_block = False
 
         for line in response.split("\n"):
-            if line.startswith("File: "):
+            if line.startswith("# File: "):
                 if current_file and current_code:
                     result.append({"file": current_file, "code": "\n".join(current_code)})
                 current_file = line.split("`")[1].strip()
